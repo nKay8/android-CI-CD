@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  
+      
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,22 +20,20 @@ jobs:
 
       - name: Extract and Increment Version
         run: |
+          cd my_app  # Move into the correct directory
           VERSION_LINE=$(grep 'version:' pubspec.yaml)
           CURRENT_VERSION=$(echo $VERSION_LINE | awk '{print $2}')
           VERSION_NAME=$(echo $CURRENT_VERSION | cut -d '+' -f1)
           VERSION_CODE=$(echo $CURRENT_VERSION | cut -d '+' -f2)
-
           NEW_VERSION_CODE=$((VERSION_CODE + 1))
-
-          # Update pubspec.yaml
+          
           sed -i "s/version: $CURRENT_VERSION/version: $VERSION_NAME+$NEW_VERSION_CODE/" pubspec.yaml
-
-          # Flutter generates versionCode from pubspec.yaml, no need to modify build.gradle manually
 
       - name: Commit and Push Version Changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          cd my_app  # Move into the correct directory
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add pubspec.yaml
@@ -43,18 +41,20 @@ jobs:
           git push
 
       - name: Build Android App
-        run: flutter build appbundle
+        run: |
+          cd my_app  # Move into the correct directory
+          flutter build appbundle
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: app-release.aab
-          path: build/app/outputs/bundle/release/app-release.aab
+          path: my_app/build/app/outputs/bundle/release/app-release.aab
 
       - name: Upload to Play Store (Beta)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJson: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: com.urgentmc.ufinance
-          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          releaseFiles: my_app/build/app/outputs/bundle/release/app-release.aab
           track: beta
