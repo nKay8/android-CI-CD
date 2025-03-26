@@ -1,0 +1,56 @@
+require 'fastlane/plugin/android_versioning'
+
+default_platform(:android)
+
+platform :android do
+  desc "Runs unit tests"
+  lane :test do
+    gradle(task: "test")
+  end
+
+  desc "Builds the app as an AAB bundle"
+  lane :build do
+    gradle(
+      task: "bundle",
+      build_type: "Release"
+    )
+  end
+
+  desc "Increments version code and name"
+  lane :bump_version do
+    version_code = get_version_code.to_i + 1
+    increment_version_code(version_code: version_code)
+  
+    version_name = get_version_name
+    new_version_name = "#{version_name.split('.')[0].to_i + 1}.0.0"
+    increment_version_name(version_name: new_version_name)
+  
+    puts "📢 Updated version to #{new_version_name} (code: #{version_code})"
+  end
+  
+
+  desc "Builds and uploads the AAB to the Play Store Beta track"
+lane :beta do
+  bump_version
+  build
+  upload_to_play_store(
+    aab: "C:/Users/HP/Documents/flutter-practice/my_app/build/app/outputs/bundle/release/app-release.aab",
+    track: "beta",
+    json_key: "C:/Users/HP/Documents/flutter-practice/my_app/android/fastlane/sa.json"
+  )
+end
+
+
+  desc "Deploy a new production version to Google Play"
+  lane :deploy do
+    bump_version
+    build
+    upload_to_play_store(
+  aab: "C:/Users/HP/Documents/flutter-practice/my_app/build/app/outputs/bundle/release/app-release.aab",
+  track: "beta",
+  json_key: "C:/Users/HP/Documents/flutter-practice/my_app/android/fastlane/sa.json"
+)
+
+
+  end
+end
